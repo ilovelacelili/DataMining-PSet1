@@ -1,0 +1,29 @@
+services:
+  warehouse:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - ./db-data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT}:5432"
+    
+  warehouse_ui:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+    volumes:
+      - ./db-ui-data:/var/lib/pgadmin
+    ports:
+      - "${PGADMIN_PORT}:80"
+      
+  scheduler:
+    image: mageai/mageai
+    volumes:
+      - ./scheduler-data:/home/src
+    ports:
+      - "${MAGEAI_PORT}:6789"
+    command: /app/run_app.sh mage start scheduler
