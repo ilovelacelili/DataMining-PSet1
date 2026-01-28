@@ -17,28 +17,25 @@ def get_qb_tokens(*args, **kwargs):
     """
     
     auth_url = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer'
-
+    
     clientId = get_secret_value('qb_client_id')
     client_secret = get_secret_value('qb_client_secret')
     refresh_token = get_secret_value('qb_refresh_token')
 
-    data = {
+    payload = {
         'grant_type': 'refresh_token',
-        'refresh_token': refresh_token
+        'refresh_token': refresh_token,
     }
 
-    companyinfo = (clientId, client_secret)
-
-    response = requests.post(auth_url, data=data, auth=companyinfo)
-
-    print(response.status_code)
+    response = requests.post(
+        auth_url,
+        data=payload, 
+        auth=(clientId, client_secret))
 
     if response.status_code == 200:
         return response.json()['access_token']
     else:
         return None
-
-
 
 @test
 def test_output(output, *args) -> None:

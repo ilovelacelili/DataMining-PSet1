@@ -15,7 +15,8 @@ def _fetch_qb_customers(base_url, access_token, realmId, page_size=100):
 
     headers = {
         'Authorization': f'Bearer {access_token}',
-        'Content-type': 'application/text'
+        'Accept': 'application/json',
+        'Content-type': 'application/json',
     }
 
     full_uri = f'{base_url}/v3/company/{realmId}/query'
@@ -28,14 +29,14 @@ def _fetch_qb_customers(base_url, access_token, realmId, page_size=100):
     current_delay = 1 # Incremented in powers of 2 in case of errors
 
     while True:
-        query = f'SELECT * FROM Customers STARTPOSITION {starting_pos} MAXRESULTS page_size'
+        query = f'SELECT * FROM Customer STARTPOSITION {starting_pos} MAXRESULTS {page_size}'
 
         for attempt in range(max_tries):
             try:
                 response = requests.get(
-                    f'{full_uri}',
+                    full_uri,
                     headers=headers,
-                    data=query
+                    params={'query': query}
                 )
                 
                 print(response.status_code)

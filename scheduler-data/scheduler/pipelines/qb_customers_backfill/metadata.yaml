@@ -1,5 +1,24 @@
 blocks:
 - all_upstream_blocks_executed: true
+  color: purple
+  configuration:
+    file_path: custom/qb_tokens_checker.py
+    file_source:
+      path: custom/qb_tokens_checker.py
+  downstream_blocks:
+  - ingest_customers
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: qb_tokens_checker
+  retry_config: null
+  status: updated
+  timeout: null
+  type: custom
+  upstream_blocks: []
+  uuid: qb_tokens_checker
+- all_upstream_blocks_executed: false
   color: null
   configuration:
     file_path: data_loaders/ingest_customers.py
@@ -19,25 +38,6 @@ blocks:
   upstream_blocks:
   - qb_tokens_checker
   uuid: ingest_customers
-- all_upstream_blocks_executed: true
-  color: purple
-  configuration:
-    file_path: custom/qb_tokens_checker.py
-    file_source:
-      path: custom/qb_tokens_checker.py
-  downstream_blocks:
-  - ingest_customers
-  executor_config: null
-  executor_type: local_python
-  has_callback: false
-  language: python
-  name: qb_tokens_checker
-  retry_config: null
-  status: executed
-  timeout: null
-  type: custom
-  upstream_blocks: []
-  uuid: qb_tokens_checker
 - all_upstream_blocks_executed: false
   color: null
   configuration: {}
