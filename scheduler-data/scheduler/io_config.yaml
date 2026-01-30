@@ -84,7 +84,7 @@ default:
   # PostgresSQL
   POSTGRES_CONNECT_TIMEOUT: 10
   POSTGRES_DBNAME: "{{ mage_secret_var('pg_dbname') }}"
-  POSTGRES_SCHEMA: qb_costumer # Optional
+  POSTGRES_SCHEMA: "{{ mage_secret_var('pg_schema') }}"
   POSTGRES_USER: "{{ mage_secret_var('pg_user') }}"
   POSTGRES_PASSWORD: "{{ mage_secret_var('pg_password') }}"
   POSTGRES_HOST: "{{ mage_secret_var('pg_host') }}"
