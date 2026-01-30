@@ -1,0 +1,25 @@
+blocks: []
+cache_block_output_in_memory: false
+callbacks: []
+concurrency_config: {}
+conditionals: []
+created_at: '2026-01-24 18:52:50.895497+00:00'
+data_integration: null
+description: Backfilling for Item Entity from QB API
+executor_config: {}
+executor_count: 1
+executor_type: null
+extensions: {}
+name: qb_item_backfill
+notification_config: {}
+remote_variables_dir: null
+retry_config: {}
+run_pipeline_in_one_process: false
+settings:
+  triggers: null
+spark_config: {}
+tags: []
+type: python
+uuid: qb_item_backfill
+variables_dir: /home/src/mage_data/scheduler
+widgets: []

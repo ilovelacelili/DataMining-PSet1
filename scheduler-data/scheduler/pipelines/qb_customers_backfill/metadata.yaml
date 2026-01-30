@@ -13,12 +13,12 @@ blocks:
   language: python
   name: qb_tokens_checker
   retry_config: null
-  status: updated
+  status: executed
   timeout: null
   type: custom
   upstream_blocks: []
   uuid: qb_tokens_checker
-- all_upstream_blocks_executed: false
+- all_upstream_blocks_executed: true
   color: null
   configuration:
     file_path: data_loaders/ingest_customers.py
@@ -48,7 +48,7 @@ blocks:
   language: python
   name: export_costumers
   retry_config: null
-  status: failed
+  status: updated
   timeout: null
   type: data_exporter
   upstream_blocks:

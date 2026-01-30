@@ -11,7 +11,7 @@ if 'data_loader' not in globals():
 if 'test' not in globals():
     from mage_ai.data_preparation.decorators import test
 
-def _fetch_qb_customers(base_url, access_token, realmId, page_size=100):
+def retrieve_customers(base_url, access_token, realmId, page_size=100):
 
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -21,14 +21,20 @@ def _fetch_qb_customers(base_url, access_token, realmId, page_size=100):
 
     full_uri = f'{base_url}/v3/company/{realmId}/query'
 
-    customers = []
+    raw_data = []
+    data = []
 
     batch_number = 1
     starting_pos = 1 # Starting row number
     max_tries = 5 # Limit number of tries
-    current_delay = 1 # Incremented in powers of 2 in case of errors
 
+    starting_utc_window = datetime.now(timezone.utc).isoformat()
+
+    print(starting_utc_window)
+    
     while True:
+        current_delay = 1 # Incremented in powers of 2 in case of errors
+
         query = f'SELECT * FROM Customer STARTPOSITION {starting_pos} MAXRESULTS {page_size}'
 
         for attempt in range(max_tries):
@@ -40,8 +46,11 @@ def _fetch_qb_customers(base_url, access_token, realmId, page_size=100):
                 )
                 
                 print(response.status_code)
-
                 response.raise_for_status()
+
+                data = response.json().get('QueryResponse', {}).get('Customer', [])
+
+                break
 
             except requests.exceptions.RequestException as e:
                 print(f'API Error in attempt {attempt + 1}:\n{e}')
@@ -52,13 +61,36 @@ def _fetch_qb_customers(base_url, access_token, realmId, page_size=100):
                 else:
                     print('Maximum number of tries reached.')
 
+        ending_utc_window = datetime.now(timezone.utc).isoformat()
+
+        if data:
+            for customer in data:
+                customer_id = costumer.get('id')
+
+                raw_data.append({
+                    'id': customer_id,
+                    'payload': json.dumps(customer),
+                    'ingested_at_utc': ending_utc_window,
+                    'extract_window_start_utc': starting_utc_window,
+                    'extract_window_end_utc': ending_utc_window,
+                    'page_number': batch_number,
+                    'page_size': page_size,
+                    'requested_payload': query
+
+                })
+
         if not customers:
             break
 
         starting_pos += page_size
         batch_number += 1
 
-    pass
+    ingestion_utc = datetime.now(timezone.utc).isoformat()
+
+    for row in raw_data:
+        row['ingested_at_utc'] = ingestion_utc
+
+    return raw_data
 
 @data_loader
 def load_data(access_token, *args, **kwargs):
@@ -69,9 +101,11 @@ def load_data(access_token, *args, **kwargs):
 
     realmId = get_secret_value('qb_realm_id')
 
-    response = _fetch_qb_customers(url, access_token, realmId)
+    raw_data = retrieve_customers(url, access_token, realmId)
 
-    return pd.read_csv(io.StringIO(response.text), sep=',')
+    df_customers = pd.DataFrame(raw_data)
+
+    return df_customers
 
 
 @test
