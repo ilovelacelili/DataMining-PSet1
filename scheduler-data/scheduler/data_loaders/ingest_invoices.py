@@ -11,7 +11,7 @@ if 'data_loader' not in globals():
 if 'test' not in globals():
     from mage_ai.data_preparation.decorators import test
 
-def retrieve_invoices(base_url, access_token, realmId, start_window, end_window, chunk_days=7, page_size=100):
+def retrieve_invoices(logger, base_url, access_token, realmId, start_window, end_window, chunk_days=7, page_size=100):
 
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -35,7 +35,7 @@ def retrieve_invoices(base_url, access_token, realmId, start_window, end_window,
 
     final_date_str = final_date.isoformat()
 
-    print(f'Extracting invoices in range [{start_window}, {end_window}]')
+    logger.info(f'Extracting invoices in range [{start_window}, {end_window}]')
     
     while current_date <= final_date:
         current_delay = 1 # Incremented in powers of 2 in case of errors
@@ -43,14 +43,15 @@ def retrieve_invoices(base_url, access_token, realmId, start_window, end_window,
         chunk_end = current_date + timedelta(days=chunk_days - 1)
 
         current_date_str = current_date.isoformat()
-        chunk_end_str = chunk_end.isoformat()
-
+        
         if chunk_end > final_date:
             chunk_end = final_date
 
-        query = f"SELECT * FROM Invoice WHERE TxnDate >= '{current_date_str[:10]}' AND TxnDate < '{chunk_end_str[:10]}' STARTPOSITION {starting_pos} MAXRESULTS {page_size}"
+        chunk_end_str = chunk_end.isoformat()
         
         while True:
+            query = f"SELECT * FROM Invoice WHERE TxnDate >= '{current_date_str[:10]}' AND TxnDate <= '{chunk_end_str[:10]}' STARTPOSITION {starting_pos} MAXRESULTS {page_size}"
+
             for attempt in range(max_tries):
                 try:
                     response = requests.get(
@@ -64,19 +65,21 @@ def retrieve_invoices(base_url, access_token, realmId, start_window, end_window,
 
                     data = response.json().get('QueryResponse', {}).get('Invoice', [])
 
+                    logger.info(f'Found {len(data)} for chunk [{current_date_str[:10]}, {chunk_end_str[:10]}]')
+
                     break
 
                 except requests.exceptions.RequestException as e:
-                    print(f'API Error in attempt {attempt + 1}:\n{e}. Wait for {current_delay}s.')
+                    logger.warning(f'API Error in attempt {attempt + 1}:\n{e}. Wait for {current_delay}s.')
 
                     if attempt < max_tries - 1:
                         time.sleep(current_delay)
                         current_delay *= 2
                     else:
-                        print('Maximum number of tries reached. Stopping execution.')
+                        logger.error('Maximum number of tries reached. Stopping execution.')
                         return None
 
-            print('Finishing extraction window at: ', chunk_end)
+            logger.info(f'Finishing extraction window at: {chunk_end}')
 
             if data:
                 for invoice in data:
@@ -102,7 +105,6 @@ def retrieve_invoices(base_url, access_token, realmId, start_window, end_window,
                 page_number += 1
 
         current_date = chunk_end + timedelta(days=1)
-        
 
     # Ingestion time is normalized since all rows are inserted into the DB at the same time
     ingestion_utc = datetime.now(timezone.utc).isoformat()
@@ -110,7 +112,7 @@ def retrieve_invoices(base_url, access_token, realmId, start_window, end_window,
     for row in raw_data:
         row['ingested_at_utc'] = ingestion_utc
 
-    print('Total invoices extracted: ', total_count)
+    logger.info(f'Total invoices extracted: {total_count}')
 
     return raw_data
 
@@ -119,6 +121,8 @@ def load_data(access_token, *args, **kwargs):
     """
     Loading data from QuickBooks API
     """
+    logger = kwargs.get('logger')
+
     url = 'https://sandbox-quickbooks.api.intuit.com'
 
     realmId = get_secret_value('qb_realm_id')
@@ -128,10 +132,13 @@ def load_data(access_token, *args, **kwargs):
 
     # If a range is not define, the December 2025 (last month) is loaded in
     if not start_window or not end_window:
+        logger.warning('Extraction window not defined. Extracting from December 2025.')
+
         start_window = '2025-12-01'
         end_window = '2025-12-31'
 
-    raw_data = retrieve_invoices(url, access_token, realmId, start_window, end_window)
+    logger.info('Retriving invoices...')
+    raw_data = retrieve_invoices(logger, url, access_token, realmId, start_window, end_window)
 
     df_invoices = pd.DataFrame(raw_data)
 

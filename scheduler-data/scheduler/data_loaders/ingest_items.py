@@ -32,7 +32,7 @@ def retrieve_items(logger, base_url, access_token, realmId, page_size=100):
 
     starting_utc_window = datetime.now(timezone.utc).isoformat()
 
-    logger.info('Starting extraction window at: ', starting_utc_window)
+    logger.info(f'Starting extraction window at: {starting_utc_window}')
     
     while True:
         current_delay = 1 # Incremented in powers of 2 in case of errors
@@ -66,7 +66,7 @@ def retrieve_items(logger, base_url, access_token, realmId, page_size=100):
 
         ending_utc_window = datetime.now(timezone.utc).isoformat()
 
-        logger.info('Finishing extraction window at: ', ending_utc_window)
+        logger.info(f'Finishing extraction window at: {ending_utc_window}')
 
         if data:
             for item in data:
@@ -97,7 +97,7 @@ def retrieve_items(logger, base_url, access_token, realmId, page_size=100):
     for row in raw_data:
         row['ingested_at_utc'] = ingestion_utc
 
-    logger.info('Total items extracted: ', total_count)
+    logger.info(f'Total items extracted: {total_count}')
 
     return raw_data
 
@@ -113,6 +113,8 @@ def load_data(access_token, *args, **kwargs):
     url = 'https://sandbox-quickbooks.api.intuit.com'
 
     realmId = get_secret_value('qb_realm_id')
+
+    logger.info('Retrieving items...')
 
     raw_data = retrieve_items(logger, url, access_token, realmId)
 

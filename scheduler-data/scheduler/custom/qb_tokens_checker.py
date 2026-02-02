@@ -15,14 +15,15 @@ def get_qb_tokens(*args, **kwargs):
     Returns:
         Anything (e.g. data frame, dictionary, array, int, str, etc.)
     """
-    
+    logger = kwargs.get('logger')
+
     auth_url = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer'
     
     clientId = get_secret_value('qb_client_id')
     client_secret = get_secret_value('qb_client_secret')
     refresh_token = get_secret_value('qb_refresh_token')
 
-    print('Retrieving access token from the QB API.')
+    logger.info('Retrieving access token from the QB API.')
 
     payload = {
         'grant_type': 'refresh_token',
@@ -35,10 +36,10 @@ def get_qb_tokens(*args, **kwargs):
         auth=(clientId, client_secret))
 
     if response.status_code == 200:
-        print('Access token succesfully retrieved.')
+        logger.info('Access token succesfully retrieved.')
         return response.json()['access_token']
     else:
-        print('Could not retrieve access token. Please check the validity of refresh token.')
+        logger.error('Could not retrieve access token. Please check the validity of refresh token.')
         return None
 
 @test

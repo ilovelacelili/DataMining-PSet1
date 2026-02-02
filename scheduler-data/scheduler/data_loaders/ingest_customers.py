@@ -11,7 +11,7 @@ if 'data_loader' not in globals():
 if 'test' not in globals():
     from mage_ai.data_preparation.decorators import test
 
-def retrieve_customers(base_url, access_token, realmId, page_size=100):
+def retrieve_customers(logger, base_url, access_token, realmId, page_size=100):
 
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -32,7 +32,7 @@ def retrieve_customers(base_url, access_token, realmId, page_size=100):
 
     starting_utc_window = datetime.now(timezone.utc).isoformat()
 
-    print('Starting extraction window at: ', starting_utc_window)
+    logger.info(f'Starting extraction window at: {starting_utc_window}')
     
     while True:
         current_delay = 1 # Incremented in powers of 2 in case of errors
@@ -47,26 +47,28 @@ def retrieve_customers(base_url, access_token, realmId, page_size=100):
                     params={'query': query}
                 )
                 
-                print(response.status_code)
+                logger.info(f'Response code: {response.status_code}')
                 response.raise_for_status()
 
                 data = response.json().get('QueryResponse', {}).get('Customer', [])
 
+                logger.info(f'Extracted {len(data)} customers.')
+
                 break
 
             except requests.exceptions.RequestException as e:
-                print(f'API Error in attempt {attempt + 1}:\n{e}. Wait for {current_delay} s.')
+                logger.warning(f'API Error in attempt {attempt + 1}:\n{e}. Wait for {current_delay} s.')
 
                 if attempt < max_tries - 1:
                     time.sleep(current_delay)
                     current_delay *= 2
                 else:
-                    print('Maximum number of tries reached. Stopping execution.')
+                    logger.error('Maximum number of tries reached. Stopping execution.')
                     return None
 
         ending_utc_window = datetime.now(timezone.utc).isoformat()
 
-        print('Finishing extraction window at: ', ending_utc_window)
+        logger.info(f'Finishing extraction window at: {ending_utc_window}')
 
         if data:
             for customer in data:
@@ -97,7 +99,7 @@ def retrieve_customers(base_url, access_token, realmId, page_size=100):
     for row in raw_data:
         row['ingested_at_utc'] = ingestion_utc
 
-    print('Total customers extracted: ', total_count)
+    logger.info(f'Total customers extracted: {total_count}')
 
     return raw_data
 
@@ -106,13 +108,18 @@ def load_data(access_token, *args, **kwargs):
     """
     Loading data from QuickBooks API
     """
+    logger = kwargs.get('logger')
     url = 'https://sandbox-quickbooks.api.intuit.com'
 
     realmId = get_secret_value('qb_realm_id')
 
-    raw_data = retrieve_customers(url, access_token, realmId)
+    logger.info('Starting customer retrieving...')
+
+    raw_data = retrieve_customers(logger, url, access_token, realmId)
 
     df_customers = pd.DataFrame(raw_data)
+
+    logger.info('Done retrieving customers.')
 
     return df_customers
 

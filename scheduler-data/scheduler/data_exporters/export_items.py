@@ -9,7 +9,7 @@ if 'data_exporter' not in globals():
     from mage_ai.data_preparation.decorators import data_exporter
 
 
-def create_qb_table(table_name: str, schema: str):
+def create_qb_table(logger, table_name: str, schema: str):
     
     config_path = path.join(get_repo_path(), 'io_config.yaml')
     config_profile = 'default'
@@ -28,9 +28,9 @@ def create_qb_table(table_name: str, schema: str):
     );
     """
     with Postgres.with_config(ConfigFileLoader(config_path, config_profile)) as loader:
-        print(f"Checking/Creating table: {table_name}...")
+        logger.info(f"Checking/Creating table: {table_name}...")
         loader.execute(create_query)
-        print(f"Verified {table_name}.")
+        logger.info(f"Verified {table_name}.")
 
 
 @data_exporter
@@ -41,17 +41,18 @@ def postgres_data_export(df: DataFrame, **kwargs) -> None:
 
     Docs: https://docs.mage.ai/design/data-loading#postgresql
     """
+    logger = kwargs.get('logger')
     schema_name = get_secret_value('pg_schema')  # Specify the name of the schema to export data to
     table_name = 'qb_item'  # Specify the name of the table to export data to
 
-    create_qb_table(table_name, schema_name)
+    create_qb_table(logger, table_name, schema_name)
 
     full_table_name = f'{schema_name}.{table_name}'
 
     config_path = path.join(get_repo_path(), 'io_config.yaml')
     config_profile = 'default'
 
-    print('Beginning data exportation...')
+    logger.info('Beginning data exportation...')
     with Postgres.with_config(ConfigFileLoader(config_path, config_profile)) as loader:
         loader.export(
             df,
@@ -62,10 +63,10 @@ def postgres_data_export(df: DataFrame, **kwargs) -> None:
             unique_constraints=['id'],
             unique_conflict_method='UPDATE',
         )
-        print('Data exported to the database.')
+        logger.info('Data exported to the database.')
 
-        print(f"\n--- VERIFYING DATA IN {table_name} ---")
+        logger.info(f"\n--- VERIFYING DATA IN {table_name} ---")
 
         df_count = loader.load(f'SELECT COUNT(*) as total FROM {full_table_name}')
 
-        print('Total number of entries in the database: ', df_count.iloc[0]['total'])
+        logger.info(f"Total number of entries in the database: {df_count.iloc[0]['total']}")

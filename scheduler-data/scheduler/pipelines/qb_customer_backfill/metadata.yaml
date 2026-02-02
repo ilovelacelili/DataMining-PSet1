@@ -13,12 +13,12 @@ blocks:
   language: python
   name: qb_tokens_checker
   retry_config: null
-  status: executed
+  status: updated
   timeout: null
   type: custom
   upstream_blocks: []
   uuid: qb_tokens_checker
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration: {}
   downstream_blocks:
