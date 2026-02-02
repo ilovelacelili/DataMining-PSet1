@@ -22,6 +22,8 @@ def get_qb_tokens(*args, **kwargs):
     client_secret = get_secret_value('qb_client_secret')
     refresh_token = get_secret_value('qb_refresh_token')
 
+    print('Retrieving access token from the QB API.')
+
     payload = {
         'grant_type': 'refresh_token',
         'refresh_token': refresh_token,
@@ -33,8 +35,10 @@ def get_qb_tokens(*args, **kwargs):
         auth=(clientId, client_secret))
 
     if response.status_code == 200:
+        print('Access token succesfully retrieved.')
         return response.json()['access_token']
     else:
+        print('Could not retrieve access token. Please check the validity of refresh token.')
         return None
 
 @test

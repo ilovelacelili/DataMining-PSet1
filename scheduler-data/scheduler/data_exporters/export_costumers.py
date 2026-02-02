@@ -17,7 +17,7 @@ def create_qb_table(table_name: str, schema: str):
     create_query = f"""
     CREATE SCHEMA IF NOT EXISTS {schema};
     CREATE TABLE IF NOT EXISTS {table_name} (
-        id TEXT PRIMARY KEY,
+        id INT PRIMARY KEY,
         payload JSONB NOT NULL,
         ingested_at_utc TIMESTAMPTZ NOT NULL,
         extract_window_start_utc TIMESTAMPTZ NOT NULL,
@@ -42,11 +42,11 @@ def postgres_data_export(df: DataFrame, **kwargs) -> None:
     Docs: https://docs.mage.ai/design/data-loading#postgresql
     """
     schema_name = get_secret_value('pg_schema')  # Specify the name of the schema to export data to
-    table_name = 'qb_costumer'  # Specify the name of the table to export data to
+    table_name = 'qb_customer'  # Specify the name of the table to export data to
 
     create_qb_table(table_name, schema_name)
 
-    full_table_name = f'{schema}.{table_name}'
+    full_table_name = f'{schema_name}.{table_name}'
 
     config_path = path.join(get_repo_path(), 'io_config.yaml')
     config_profile = 'default'
@@ -59,15 +59,13 @@ def postgres_data_export(df: DataFrame, **kwargs) -> None:
             table_name,
             index=False,
             if_exists='append',  # UPSERT defined below by updating if it exists instead
-            unique_constaints=['id'],
+            unique_constraints=['id'],
             unique_conflict_method='UPDATE',
-            allow_reversed_words=True
         )
-    print('Data exported to the database.')
+        print('Data exported to the database.')
 
-    number_exported = 0
+        print(f"\n--- VERIFYING DATA IN {table_name} ---")
 
-    with Postgres.with_config(ConfigFileLoader(config_path, config_profile)) as loader:
-        number_exported = loader.execture('SELECT COUNT(*) FROM {full_table_name}')
+        df_count = loader.load(f'SELECT COUNT(*) as total FROM {full_table_name}')
 
-    print('Total number of entries in the database: ', number_exported)
+        print('Total number of entries in the database: ', df_count.iloc[0]['total'])

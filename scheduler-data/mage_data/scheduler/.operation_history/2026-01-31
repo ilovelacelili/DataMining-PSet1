@@ -1,0 +1,5 @@
+{"operation": "create", "resource": {"type": "pipeline", "uuid": "qb_item_backfill_copy"}, "timestamp": 1769897948, "user": 1}
+{"operation": "create", "resource": {"type": "pipeline", "uuid": "qb_customers_backfill_copy"}, "timestamp": 1769897956, "user": 1}
+{"operation": "create", "resource": {"type": "pipeline", "uuid": "qb_customers_backfill_copy"}, "timestamp": 1769899296, "user": 1}
+{"operation": "create", "resource": {"type": "pipeline", "uuid": "qb_invoice_backfill"}, "timestamp": 1769900531, "user": 1}
+{"operation": "create", "resource": {"type": "pipeline", "uuid": "qb_invoice_backfill"}, "timestamp": 1769901105, "user": 1}

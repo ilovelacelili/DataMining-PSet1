@@ -28,9 +28,11 @@ def retrieve_customers(base_url, access_token, realmId, page_size=100):
     starting_pos = 1 # Starting row number
     max_tries = 5 # Limit number of tries
 
+    total_count = 0
+
     starting_utc_window = datetime.now(timezone.utc).isoformat()
 
-    print(starting_utc_window)
+    print('Starting extraction window at: ', starting_utc_window)
     
     while True:
         current_delay = 1 # Incremented in powers of 2 in case of errors
@@ -53,19 +55,23 @@ def retrieve_customers(base_url, access_token, realmId, page_size=100):
                 break
 
             except requests.exceptions.RequestException as e:
-                print(f'API Error in attempt {attempt + 1}:\n{e}')
+                print(f'API Error in attempt {attempt + 1}:\n{e}. Wait for {current_delay} s.')
 
                 if attempt < max_tries - 1:
                     time.sleep(current_delay)
                     current_delay *= 2
                 else:
-                    print('Maximum number of tries reached.')
+                    print('Maximum number of tries reached. Stopping execution.')
+                    return None
 
         ending_utc_window = datetime.now(timezone.utc).isoformat()
 
+        print('Finishing extraction window at: ', ending_utc_window)
+
         if data:
             for customer in data:
-                customer_id = costumer.get('id')
+                total_count += 1
+                customer_id = customer.get('Id')
 
                 raw_data.append({
                     'id': customer_id,
@@ -76,19 +82,22 @@ def retrieve_customers(base_url, access_token, realmId, page_size=100):
                     'page_number': batch_number,
                     'page_size': page_size,
                     'requested_payload': query
-
                 })
 
-        if not customers:
+        # Escape the loop if all data has been processed
+        if len(data) < page_size:
             break
 
         starting_pos += page_size
         batch_number += 1
 
+    # Ingestion time is normalized since all rows are inserted into the DB at the same time
     ingestion_utc = datetime.now(timezone.utc).isoformat()
 
     for row in raw_data:
         row['ingested_at_utc'] = ingestion_utc
+
+    print('Total customers extracted: ', total_count)
 
     return raw_data
 
